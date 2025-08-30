@@ -14,13 +14,13 @@ pub fn main() !void {
 }
 
 fn GetUserInput() !Inputs {
-    const stdin = std.io.getStdIn().reader();
+    const stdin_reader = std.io.getStdIn().reader();
     const stdout = std.io.getStdOut().writer();
 
     // First number
     var buffer1: [1024]u8 = undefined;
     try stdout.print("Enter your number: ", .{});
-    const line1 = try stdin.readUntilDelimiterOrEof(&buffer1, '\n');
+    const line1 = try stdin_reader.readUntilDelimiterOrEof(&buffer1, '\n');
 
     const num1 = std.fmt.parseFloat(f64, std.mem.trim(u8, line1.?, " \n\t\r")) catch |err| {
         print("Invalid input, errors:{any}\n", .{err});
@@ -35,14 +35,14 @@ fn GetUserInput() !Inputs {
         "Enter '-' for a subtraction\n" ++
         "Enter '*' for a multiplication\n" ++
         "Press 'q' to exit\n", .{});
-    const op_line = try stdin.readUntilDelimiterOrEof(&buffer2, '\n');
+    const op_line = try stdin_reader.readUntilDelimiterOrEof(&buffer2, '\n');
     if (op_line == null or op_line.?.len == 0) return error.InvalidOperation;
     const operation = op_line.?[0];
 
     // Second number
     var buffer3: [1024]u8 = undefined;
     try stdout.print("Enter your number: ", .{});
-    const line2 = try stdin.readUntilDelimiterOrEof(&buffer3, '\n');
+    const line2 = try stdin_reader.readUntilDelimiterOrEof(&buffer3, '\n');
 
     const num2 = std.fmt.parseFloat(f64, std.mem.trim(u8, line2.?, " \n\t\r")) catch |err| {
         print("No input recived, errors:{any}\n", .{err});
