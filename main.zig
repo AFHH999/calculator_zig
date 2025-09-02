@@ -14,40 +14,60 @@ pub fn main() !void {
 }
 
 fn GetUserInput() !Inputs {
-    const stdin_reader = std.io.getStdIn().reader();
-    const stdout = std.io.getStdOut().writer();
+    const stdin = std.fs.File.stdin();
+    const stdout = std.fs.File.stdout();
+    const stderr = std.fs.File.stderr();
+
+    var stdout_buffer: [4096]u8 = undefined;
+    var stdin_buffer: [4096]u8 = undefined;
+    var stderr_buffer: [4096]u8 = undefined;
+
+    var file_reader = stdin.reader(&stdin_buffer);
+    var file_wrider = stdout.writer(&stdout_buffer);
+    var stderr_file = stderr.writer(&stderr_buffer);
+
+    const stdout_writer_interface = &file_wrider.interface;
+    const stdin_reader_interface = &file_reader.interface;
+    const stderr_writer_interface = &stderr_file.interface;
 
     // First number
-    var buffer1: [1024]u8 = undefined;
-    try stdout.print("Enter your number: ", .{});
-    const line1 = try stdin_reader.readUntilDelimiterOrEof(&buffer1, '\n');
-
-    const num1 = std.fmt.parseFloat(f64, std.mem.trim(u8, line1.?, " \n\t\r")) catch |err| {
-        print("Invalid input, errors:{any}\n", .{err});
-        return error.InvalidInput;
+    try stdout_writer_interface.writeAll("Write your first number: ");
+    try stdout_writer_interface.flush();
+    const value_arr = stdin_reader_interface.takeDelimiterExclusive('\n') catch |err| {
+        stderr_writer_interface.print("error: the input wasn't the expected, specific error: {any}", .{err}) catch {};
+        stderr_writer_interface.flush() catch {};
+        return err;
     };
+    const num1 = try std.fmt.parseFloat(f64, value_arr);
+    try stdout_writer_interface.flush();
 
     //Operation
-    var buffer2: [1024]u8 = undefined;
-    try stdout.print("Select the operation you want to perform\n" ++
-        "Enter '/' for a division\n" ++
-        "Enter '+' for addition\n" ++
-        "Enter '-' for a subtraction\n" ++
-        "Enter '*' for a multiplication\n" ++
-        "Press 'q' to exit\n", .{});
-    const op_line = try stdin_reader.readUntilDelimiterOrEof(&buffer2, '\n');
-    if (op_line == null or op_line.?.len == 0) return error.InvalidOperation;
-    const operation = op_line.?[0];
+    try stdout_writer_interface.writeAll(
+        "Write the operation to perform\n" ++
+            "'/' For division\n" ++
+            "'+' For addition\n" ++
+            "'-' For subtraction\n" ++
+            "'*' For multiplication\n",
+    );
+    try stdout_writer_interface.flush();
+    const value_op = stdin_reader_interface.takeDelimiterExclusive('\n') catch |err| {
+        stderr_writer_interface.print("error: the input wasn't the expected, specific error: {any}", .{err}) catch {};
+        stderr_writer_interface.flush() catch {};
+        return err;
+    };
+    if (value_op.len == 0) return error.InvalidOperation;
+    const operation = value_op[0];
 
     // Second number
-    var buffer3: [1024]u8 = undefined;
-    try stdout.print("Enter your number: ", .{});
-    const line2 = try stdin_reader.readUntilDelimiterOrEof(&buffer3, '\n');
-
-    const num2 = std.fmt.parseFloat(f64, std.mem.trim(u8, line2.?, " \n\t\r")) catch |err| {
-        print("No input recived, errors:{any}\n", .{err});
-        return error.InvalidInput;
+    try stdout_writer_interface.writeAll("Write your second number: ");
+    try stdout_writer_interface.flush();
+    const value_arr_2 = stdin_reader_interface.takeDelimiterExclusive('\n') catch |err| {
+        stderr_writer_interface.print("error: the input wasn't the expected, specific error: {any}", .{err}) catch {};
+        stderr_writer_interface.flush() catch {};
+        return err;
     };
+    const num2 = try std.fmt.parseFloat(f64, value_arr_2);
+    try stdout_writer_interface.flush();
 
     return Inputs{
         .num1 = num1,
@@ -58,7 +78,6 @@ fn GetUserInput() !Inputs {
 
 fn calculating(inputs: Inputs) !void {
     var result: f64 = 0;
-    var valid_operation = true;
 
     switch (inputs.operation) {
         '+' => result = inputs.num1 + inputs.num2,
@@ -73,11 +92,8 @@ fn calculating(inputs: Inputs) !void {
         },
         else => {
             print("Error: Invalid operation, valid ones: {c}\n", .{inputs.operation});
-
-            valid_operation = false;
+            return;
         },
     }
-    if (valid_operation) {
-        print("{d} {c} {d} = {d}\n", .{ inputs.num1, inputs.operation, inputs.num2, result });
-    }
+    print("{d} {c} {d} = {d}\n", .{ inputs.num1, inputs.operation, inputs.num2, result });
 }
